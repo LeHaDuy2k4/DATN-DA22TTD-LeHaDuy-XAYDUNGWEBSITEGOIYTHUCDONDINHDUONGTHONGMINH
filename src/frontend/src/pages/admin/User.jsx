@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import AdminLayout from '@/components/layouts/AdminLayout'; 
-import axios from 'axios';
+import api from '@/lib/axios';
 import { toast } from 'sonner'; 
 import { useAuthStore } from '../../stores/useAuthStores';
 
@@ -22,7 +22,7 @@ const Users = () => {
         setIsLoading(true);
         const token = localStorage.getItem('nutrifood_token');
 
-        const res = await axios.get('http://localhost:5001/api/users', { 
+        const res = await api.get('/users', { 
           headers: { Authorization: `Bearer ${token}` },
           withCredentials: true 
         });
@@ -50,8 +50,8 @@ const Users = () => {
     try {
       const token = localStorage.getItem('nutrifood_token');
 
-      await axios.put(
-        `http://localhost:5001/api/users/role/${userId}`, 
+      await api.put(
+        `/users/role/${userId}`, 
         { role: newRole }, 
         { 
           headers: { Authorization: `Bearer ${token}` }, 
@@ -74,7 +74,7 @@ const Users = () => {
       try {
         const token = localStorage.getItem('nutrifood_token');
 
-        await axios.delete(`http://localhost:5001/api/users/${userId}`, { 
+        await api.delete(`/users/${userId}`, { 
           headers: { Authorization: `Bearer ${token}` },
           withCredentials: true 
         });

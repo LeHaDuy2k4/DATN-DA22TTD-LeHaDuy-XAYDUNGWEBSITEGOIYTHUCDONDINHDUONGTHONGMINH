@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from '@/lib/axios';
 import { toast } from 'sonner';
 import { useAuthStore } from '@/stores/useAuthStores';
 import Header from '@/components/layouts/Header';
@@ -24,7 +24,7 @@ const FavoritePage = () => {
       try {
         setIsLoading(true);
         const token = localStorage.getItem('nutrifood_token');
-        const res = await axios.get('http://localhost:5001/api/favorites', {
+        const res = await api.get('/favorites', {
           headers: { Authorization: `Bearer ${token}` }
         });
         
@@ -47,7 +47,7 @@ const FavoritePage = () => {
 
     try {
       const token = localStorage.getItem('nutrifood_token');
-      await axios.post('http://localhost:5001/api/favorites/toggle', { mealId }, {
+      await api.post('/favorites/toggle', { mealId }, {
         headers: { Authorization: `Bearer ${token}` }
       });
       

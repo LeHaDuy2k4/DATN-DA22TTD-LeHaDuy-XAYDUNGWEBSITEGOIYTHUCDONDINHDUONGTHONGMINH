@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import AdminLayout from '@/components/layouts/AdminLayout'; 
-import axios from 'axios';
+import api from '@/lib/axios';
 import { toast } from 'sonner'; 
 
 const Meal_log = () => {
@@ -18,7 +18,7 @@ const Meal_log = () => {
       setIsLoading(true);
       const token = localStorage.getItem('nutrifood_token');
 
-      const res = await axios.get('http://localhost:5001/api/meal-logs/all', { 
+      const res = await api.get('/meal-logs/all', { 
         headers: { Authorization: `Bearer ${token}` },
         withCredentials: true 
       });
@@ -49,7 +49,7 @@ const Meal_log = () => {
       try {
         const token = localStorage.getItem('nutrifood_token');
 
-        await axios.delete(`http://localhost:5001/api/meal-logs/admin/${id}`, { 
+        await api.delete(`/meal-logs/admin/${id}`, { 
           headers: { Authorization: `Bearer ${token}` },
           withCredentials: true 
         });

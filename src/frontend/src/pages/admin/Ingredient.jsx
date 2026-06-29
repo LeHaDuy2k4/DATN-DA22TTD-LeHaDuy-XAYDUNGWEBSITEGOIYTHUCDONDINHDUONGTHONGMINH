@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import AdminLayout from '@/components/layouts/AdminLayout'; 
-import axios from 'axios';
+import api from '@/lib/axios';
 import { toast } from 'sonner'; 
 
 const Ingredient = () => {
@@ -31,7 +31,7 @@ const Ingredient = () => {
       setIsLoading(true);
       const token = localStorage.getItem('nutrifood_token');
 
-      const res = await axios.get('http://localhost:5001/api/ingredients', { 
+      const res = await api.get('/ingredients', { 
         headers: { Authorization: `Bearer ${token}` },
         withCredentials: true 
       });
@@ -108,11 +108,11 @@ const Ingredient = () => {
       const config = { headers: { Authorization: `Bearer ${token}` }, withCredentials: true };
 
       if (editId) {
-        const res = await axios.put(`http://localhost:5001/api/ingredients/${editId}`, formData, config);
+        const res = await api.put(`/ingredients/${editId}`, formData, config);
         setIngredients(ingredients.map(item => item._id === editId ? (res.data.ingredient || res.data) : item));
         toast.success("Cập nhật nguyên liệu thành công!");
       } else {
-        const res = await axios.post('http://localhost:5001/api/ingredients', formData, config);
+        const res = await api.post('/ingredients', formData, config);
         setIngredients([res.data.ingredient || res.data, ...ingredients]);
         toast.success("Thêm nguyên liệu mới thành công!");
       }
@@ -129,7 +129,7 @@ const Ingredient = () => {
     if (window.confirm(`Bạn có chắc chắn muốn xóa nguyên liệu "${name}" không?`)) {
       try {
         const token = localStorage.getItem('nutrifood_token');
-        await axios.delete(`http://localhost:5001/api/ingredients/${id}`, { 
+        await api.delete(`/ingredients/${id}`, { 
           headers: { Authorization: `Bearer ${token}` }, withCredentials: true 
         });
         setIngredients(ingredients.filter(item => item._id !== id));

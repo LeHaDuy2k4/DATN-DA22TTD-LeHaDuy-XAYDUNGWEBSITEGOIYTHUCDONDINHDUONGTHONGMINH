@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Header from '@/components/layouts/Header';
 import Footer from '@/components/layouts/Footer';
-import axios from 'axios'; // 🎯 Sử dụng axios gốc
+import api from '@/lib/axios'; // 
 import { toast } from 'sonner';
 
 const ProfilePage = () => {
@@ -30,7 +30,7 @@ const ProfilePage = () => {
         }
 
         // Gửi request kèm Token trong Header
-        const res = await axios.get('http://localhost:5001/api/users/me', {
+        const res = await api.get('/users/me', {
           headers: { Authorization: `Bearer ${token}` },
           withCredentials: true
         });
@@ -77,7 +77,7 @@ const ProfilePage = () => {
       const token = localStorage.getItem('nutrifood_token');
 
       // Gửi request PUT kèm dữ liệu và Token
-      const res = await axios.put('http://localhost:5001/api/users/profile', payload, {
+      const res = await api.put('users/profile', payload, {
         headers: { Authorization: `Bearer ${token}` },
         withCredentials: true
       });

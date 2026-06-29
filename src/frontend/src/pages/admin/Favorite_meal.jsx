@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import AdminLayout from '@/components/layouts/AdminLayout'; 
-import axios from 'axios';
+import api from '@/lib/axios';
 import { toast } from 'sonner'; 
 
 const Favorite_meal = () => {
@@ -18,7 +18,7 @@ const Favorite_meal = () => {
       setIsLoading(true);
       const token = localStorage.getItem('nutrifood_token');
 
-      const res = await axios.get('http://localhost:5001/api/favorites/all', { 
+      const res = await api.get('/favorites/all', { 
         headers: { Authorization: `Bearer ${token}` },
         withCredentials: true 
       });
@@ -49,7 +49,7 @@ const Favorite_meal = () => {
       try {
         const token = localStorage.getItem('nutrifood_token');
 
-        await axios.delete(`http://localhost:5001/api/favorites/admin/${id}`, { 
+        await api.delete(`/favorites/admin/${id}`, { 
           headers: { Authorization: `Bearer ${token}` },
           withCredentials: true 
         });

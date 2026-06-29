@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from '@/lib/axios';
 import { toast } from 'sonner';
 import { useAuthStore } from '@/stores/useAuthStores';
 import Header from '@/components/layouts/Header';
-import Footer from '@/components/layouts/Footer';
+
 
 // 🎯 DANH SÁCH CÂU HỎI GỢI Ý ĐƯỢC RÚT GỌN (Đơn giản, dễ tiếp cận)
 const SUGGESTED_QUESTIONS = [
@@ -42,7 +42,7 @@ const ChatbotPage = () => {
   const fetchChatHistory = async () => {
     try {
       const token = localStorage.getItem('nutrifood_token');
-      const res = await axios.get('http://localhost:5001/api/chat', {
+      const res = await api.get('/chat', {
         headers: { Authorization: `Bearer ${token}` }
       });
       setChatSessions(res.data.data || []);
@@ -65,7 +65,7 @@ const ChatbotPage = () => {
     setCurrentSessionId(sessionId);
     try {
       const token = localStorage.getItem('nutrifood_token');
-      const res = await axios.get(`http://localhost:5001/api/chat/${sessionId}`, {
+      const res = await api.get(`/chat/${sessionId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setMessages(res.data.data.messages || []);
@@ -88,7 +88,7 @@ const ChatbotPage = () => {
     
     try {
       const token = localStorage.getItem('nutrifood_token');
-      await axios.delete(`http://localhost:5001/api/chat/${sessionId}`, {
+      await api.delete(`/chat/${sessionId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -118,7 +118,7 @@ const ChatbotPage = () => {
         message: text
       };
 
-      const res = await axios.post('http://localhost:5001/api/chat/send', payload, {
+      const res = await api.post('/chat/send', payload, {
         headers: { Authorization: `Bearer ${token}` }
       });
 

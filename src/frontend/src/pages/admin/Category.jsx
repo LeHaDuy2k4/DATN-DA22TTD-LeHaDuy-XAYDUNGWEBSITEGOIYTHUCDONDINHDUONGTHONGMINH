@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import AdminLayout from '@/components/layouts/AdminLayout'; 
-import axios from 'axios';
+import api from '@/lib/axios';
 import { toast } from 'sonner'; 
 
 const Category = () => {
@@ -29,7 +29,7 @@ const Category = () => {
       setIsLoading(true);
       const token = localStorage.getItem('nutrifood_token');
 
-      const res = await axios.get('http://localhost:5001/api/categories', { 
+      const res = await api.get('/categories', { 
         headers: { Authorization: `Bearer ${token}` },
         withCredentials: true 
       });
@@ -94,12 +94,12 @@ const Category = () => {
 
       if (editId) {
         // Gọi API Cập nhật (PUT)
-        const res = await axios.put(`http://localhost:5001/api/categories/${editId}`, formData, config);
+        const res = await api.put(`/categories/${editId}`, formData, config);
         setCategories(categories.map(cat => cat._id === editId ? (res.data.category || res.data) : cat));
         toast.success("Cập nhật danh mục thành công!");
       } else {
         // Gọi API Thêm mới (POST)
-        const res = await axios.post('http://localhost:5001/api/categories', formData, config);
+        const res = await api.post('/categories', formData, config);
         setCategories([res.data.category || res.data, ...categories]);
         toast.success("Thêm danh mục mới thành công!");
       }
@@ -118,7 +118,7 @@ const Category = () => {
       try {
         const token = localStorage.getItem('nutrifood_token');
 
-        await axios.delete(`http://localhost:5001/api/categories/${id}`, { 
+        await api.delete(`/categories/${id}`, { 
           headers: { Authorization: `Bearer ${token}` },
           withCredentials: true 
         });

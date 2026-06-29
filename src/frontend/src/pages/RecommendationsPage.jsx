@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from '@/lib/axios';
 import { toast } from 'sonner';
 import { useAuthStore } from '@/stores/useAuthStores';
 import Header from '@/components/layouts/Header';
@@ -29,10 +29,10 @@ const RecommendationsPage = () => {
 
         // 1. KÉO DỮ LIỆU ĐA CHIỀU TỪ HỆ THỐNG
         const [profileRes, mealsRes, favRes, logsRes] = await Promise.allSettled([
-          axios.get('http://localhost:5001/api/users/me', { headers }),
-          axios.get('http://localhost:5001/api/meals'),
-          axios.get('http://localhost:5001/api/favorites/my-favorites', { headers }), 
-          axios.get('http://localhost:5001/api/meal-logs/my-logs', { headers }) 
+          api.get('/users/me', { headers }),
+          api.get('/meals'),
+          api.get('/favorites/my-favorites', { headers }), 
+          api.get('/meal-logs/my-logs', { headers }) 
         ]);
 
         const userData = profileRes.status === 'fulfilled' ? (profileRes.value?.data?.user || profileRes.value?.data) : null;

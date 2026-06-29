@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from '@/lib/axios';
 import { toast } from 'sonner';
 import { useAuthStore } from '@/stores/useAuthStores';
 import Header from '@/components/layouts/Header';
@@ -23,7 +23,7 @@ const MealPlanPage = () => {
     try {
       setIsLoading(true);
       const token = localStorage.getItem('nutrifood_token');
-      const res = await axios.get('http://localhost:5001/api/meal-plans/current', {
+      const res = await api.get('/meal-plans/current', {
         headers: { Authorization: `Bearer ${token}` }
       });
       setMealPlan(res.data.data);
@@ -50,7 +50,7 @@ const MealPlanPage = () => {
       setIsGenerating(true);
       const token = localStorage.getItem('nutrifood_token');
       
-      const res = await axios.post('http://localhost:5001/api/meal-plans/generate', {}, {
+      const res = await api.post('/meal-plans/generate', {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
@@ -102,7 +102,7 @@ const MealPlanPage = () => {
         }
       };
 
-      await axios.post('http://localhost:5001/api/meal-logs', payload, {
+      await api.post('/meal-logs', payload, {
         headers: { Authorization: `Bearer ${token}` }
       });
 

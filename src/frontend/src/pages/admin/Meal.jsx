@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import AdminLayout from '@/components/layouts/AdminLayout'; 
-import axios from 'axios';
+import api from '@/lib/axios';
 import { toast } from 'sonner'; 
 
 const Meals = () => {
@@ -42,9 +42,9 @@ const Meals = () => {
       const config = { headers: { Authorization: `Bearer ${token}` }, withCredentials: true };
 
       const [mealsRes, categoriesRes, ingredientsRes] = await Promise.allSettled([
-        axios.get('http://localhost:5001/api/meals', config),
-        axios.get('http://localhost:5001/api/categories', config),
-        axios.get('http://localhost:5001/api/ingredients', config)
+        api.get('/meals', config),
+        api.get('/categories', config),
+        api.get('/ingredients', config)
       ]);
       
       if (mealsRes.status === 'fulfilled' && mealsRes.value.data) {
@@ -212,10 +212,10 @@ const Meals = () => {
       };
 
       if (editId) {
-        await axios.put(`http://localhost:5001/api/meals/${editId}`, submitData, config);
+        await api.put(`/meals/${editId}`, submitData, config);
         toast.success("Cập nhật món ăn thành công!");
       } else {
-        await axios.post('http://localhost:5001/api/meals', submitData, config);
+        await api.post('/meals', submitData, config);
         toast.success("Thêm món ăn mới thành công!");
       }
       fetchData(); 
@@ -233,7 +233,7 @@ const Meals = () => {
     if (window.confirm(`Bạn có chắc chắn muốn xóa món "${name}" không?`)) {
       try {
         const token = localStorage.getItem('nutrifood_token');
-        await axios.delete(`http://localhost:5001/api/meals/${id}`, { 
+        await api.delete(`/meals/${id}`, { 
           headers: { Authorization: `Bearer ${token}` }, withCredentials: true 
         });
         setMeals(meals.filter(item => item._id !== id));

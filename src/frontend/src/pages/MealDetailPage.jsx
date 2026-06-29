@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import axios from 'axios';
+import api from '@/lib/axios';
 import { toast } from 'sonner';
 import { useAuthStore } from "@/stores/useAuthStores";
 
@@ -30,12 +30,12 @@ const MealDetailPage = () => {
     const fetchMealDetails = async () => {
       try {
         setIsLoading(true);
-        const mealRes = await axios.get(`http://localhost:5001/api/meals/${id}`);
+        const mealRes = await api.get(`/meals/${id}`);
         setMeal(mealRes.data);
 
         if (user) {
           const token = localStorage.getItem('nutrifood_token');
-          const favRes = await axios.get(`http://localhost:5001/api/favorites/check/${id}`, {
+          const favRes = await api.get(`/favorites/check/${id}`, {
             headers: { Authorization: `Bearer ${token}` }
           });
           setIsFavorited(favRes.data.isFavorited);
@@ -62,8 +62,8 @@ const MealDetailPage = () => {
 
     try {
       const token = localStorage.getItem('nutrifood_token');
-      const res = await axios.post(
-        'http://localhost:5001/api/favorites/toggle',
+      const res = await api.post(
+        '/favorites/toggle',
         { mealId: meal._id },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -111,7 +111,7 @@ const MealDetailPage = () => {
         }
       };
 
-      await axios.post('http://localhost:5001/api/meal-logs', payload, {
+      await api.post('/meal-logs', payload, {
         headers: { Authorization: `Bearer ${token}` }
       });
 

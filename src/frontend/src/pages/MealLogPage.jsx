@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from '@/lib/axios';
 import { toast } from 'sonner';
 import { useAuthStore } from '@/stores/useAuthStores';
 import Header from '@/components/layouts/Header';
@@ -35,7 +35,7 @@ const MealLogPage = () => {
     try {
       setIsLoading(true);
       const token = localStorage.getItem('nutrifood_token');
-      const res = await axios.get(`http://localhost:5001/api/meal-logs/daily?date=${selectedDate}`, {
+      const res = await api.get(`/meal-logs/daily?date=${selectedDate}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -50,7 +50,7 @@ const MealLogPage = () => {
 
   const fetchAvailableMeals = async () => {
     try {
-      const res = await axios.get('http://localhost:5001/api/meals');
+      const res = await api.get('/meals');
       setAvailableMeals(res.data || []);
     } catch (error) {
       console.error("Lỗi tải danh sách món ăn:", error);
@@ -114,7 +114,7 @@ const MealLogPage = () => {
     if (!logToDelete) return;
     try {
       const token = localStorage.getItem('nutrifood_token');
-      await axios.delete(`http://localhost:5001/api/meal-logs/${logToDelete.id}`, {
+      await api.delete(`/meal-logs/${logToDelete.id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       toast.success("Đã xóa bản ghi thành công.");
@@ -147,7 +147,7 @@ const MealLogPage = () => {
         }
       };
 
-      const response = await axios.post('http://localhost:5001/api/meal-logs', payload, {
+      const response = await api.post('/meal-logs', payload, {
         headers: { Authorization: `Bearer ${token}` }
       });
 

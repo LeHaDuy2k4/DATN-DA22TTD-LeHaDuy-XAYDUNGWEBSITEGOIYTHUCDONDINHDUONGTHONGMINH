@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import AdminLayout from '@/components/layouts/AdminLayout'; 
-import axios from 'axios';
+import api from '@/lib/axios';
 import { toast } from 'sonner'; 
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Legend, PieChart, Pie, Cell, AreaChart, Area } from 'recharts';
 
@@ -60,12 +60,12 @@ const Dashboard = () => {
 
         // 🎯 Đã gỡ bỏ catch() ẩn danh để bắt lỗi chính xác và đảm bảo FavRes được lấy đúng
         const [catRes, mealRes, ingRes, userRes, logsRes, favRes] = await Promise.allSettled([
-          axios.get('http://localhost:5001/api/categories', config),
-          axios.get('http://localhost:5001/api/meals', config),
-          axios.get('http://localhost:5001/api/ingredients', config),
-          axios.get('http://localhost:5001/api/users', config),
-          axios.get('http://localhost:5001/api/meal-logs/all', config), 
-          axios.get('http://localhost:5001/api/favorites/all', config) // 🎯 Đổi endpoint về /all giống trang Favorite_meal
+          api.get('/categories', config),
+          api.get('/meals', config),
+          api.get('/ingredients', config),
+          api.get('/users', config),
+          api.get('/meal-logs/all', config), 
+          api.get('/favorites/all', config) // 🎯 Đổi endpoint về /all giống trang Favorite_meal
         ]);
 
         const categoriesList = catRes.status === 'fulfilled' && catRes.value.data ? catRes.value.data : [];
