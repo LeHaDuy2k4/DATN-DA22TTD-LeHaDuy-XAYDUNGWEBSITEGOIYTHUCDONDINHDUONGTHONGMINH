@@ -3,6 +3,10 @@ import AdminLayout from '@/components/layouts/AdminLayout';
 import api from '@/lib/axios';
 import { toast } from 'sonner'; 
 
+// 🎯 1. KHỞI TẠO BIẾN SERVER URL ĐỂ NỐI LINK ẢNH CŨ
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5001/api";
+const BASE_SERVER_URL = API_URL.replace('/api', ''); 
+
 const Meals = () => {
   const [meals, setMeals] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -34,17 +38,26 @@ const Meals = () => {
   const [formData, setFormData] = useState(initialFormState);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // 🎯 2. HÀM XỬ LÝ ẢNH THÔNG MINH (Hỗ trợ cả Base64 và Ảnh vật lý cũ)
+  const getImageUrl = (imageString) => {
+    if (!imageString) return ''; 
+    // Nếu là Base64, Blob (chọn từ máy), hoặc link http ngoài -> Giữ nguyên
+    if (imageString.startsWith('data:image') || imageString.startsWith('http') || imageString.startsWith('blob:')) {
+      return imageString;
+    }
+    // Nếu là ảnh cũ trong /uploads -> Nối link server
+    return `${BASE_SERVER_URL}${imageString.startsWith('/') ? '' : '/'}${imageString}`;
+  };
+
   // 1. GỌI API LẤY DỮ LIỆU TỪ MONGODB
   const fetchData = async () => {
     try {
       setIsLoading(true);
-      const token = localStorage.getItem('nutrifood_token');
-      const config = { headers: { Authorization: `Bearer ${token}` }, withCredentials: true };
-
+      // 🎯 Đã dọn dẹp Token vì Axios Interceptor tự động lo phần này
       const [mealsRes, categoriesRes, ingredientsRes] = await Promise.allSettled([
-        api.get('/meals', config),
-        api.get('/categories', config),
-        api.get('/ingredients', config)
+        api.get('/meals'),
+        api.get('/categories'),
+        api.get('/ingredients')
       ]);
       
       if (mealsRes.status === 'fulfilled' && mealsRes.value.data) {
@@ -96,8 +109,8 @@ const Meals = () => {
         servings: meal.servings || 1,
         isActive: meal.isActive !== undefined ? meal.isActive : true
       });
-      // Hiển thị ảnh cũ nếu đang sửa
-      setPreviewUrl(meal.imageUrl || '');
+      // 🎯 Gọi hàm getImageUrl để render đúng ảnh cũ hoặc Base64 lên khung Preview
+      setPreviewUrl(meal.imageUrl ? getImageUrl(meal.imageUrl) : '');
     } else {
       setEditId(null);
       setFormData(initialFormState);
@@ -202,13 +215,11 @@ const Meals = () => {
         submitData.append('image', selectedImage);
       }
 
-      const token = localStorage.getItem('nutrifood_token');
+      // 🎯 Chỉ cần ghi đè Content-Type cho FormData, Token đã được tự động thêm
       const config = { 
         headers: { 
-          Authorization: `Bearer ${token}`,
           'Content-Type': 'multipart/form-data'
-        }, 
-        withCredentials: true 
+        }
       };
 
       if (editId) {
@@ -232,10 +243,7 @@ const Meals = () => {
   const handleDelete = async (id, name) => {
     if (window.confirm(`Bạn có chắc chắn muốn xóa món "${name}" không?`)) {
       try {
-        const token = localStorage.getItem('nutrifood_token');
-        await api.delete(`/meals/${id}`, { 
-          headers: { Authorization: `Bearer ${token}` }, withCredentials: true 
-        });
+        await api.delete(`/meals/${id}`); // 🎯 Gọn gàng hơn vì không cần gọi lại Token
         setMeals(meals.filter(item => item._id !== id));
         toast.success(`Đã xóa món ${name}.`);
       } catch (error) {
@@ -307,7 +315,7 @@ const Meals = () => {
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
                           {meal.imageUrl ? (
-                            <img src={meal.imageUrl} alt={meal.name} className="w-12 h-12 rounded-xl object-cover border border-slate-200" />
+                            <img src={getImageUrl(meal.imageUrl)} alt={meal.name} className="w-12 h-12 rounded-xl object-cover border border-slate-200" />
                           ) : (
                             <div className="w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center text-green-600 font-bold uppercase border border-green-200">{meal.name.charAt(0)}</div>
                           )}

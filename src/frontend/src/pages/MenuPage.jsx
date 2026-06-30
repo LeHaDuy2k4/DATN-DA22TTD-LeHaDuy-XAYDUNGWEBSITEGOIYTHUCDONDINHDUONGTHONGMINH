@@ -2,16 +2,18 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import api from '@/lib/axios';
-// Nhập Header và Footer
 import Header from '@/components/layouts/Header'; 
 import Footer from '@/components/layouts/Footer';
 
+// 🎯 1. KHỞI TẠO BIẾN SERVER URL ĐỂ XỬ LÝ ẢNH CŨ
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5001/api";
+const BASE_SERVER_URL = API_URL.replace('/api', ''); 
 
 const MenuPage = () => {
   // --- ĐỌC DỮ LIỆU TỪ URL ---
   const [searchParams, setSearchParams] = useSearchParams();
   const categoryFromUrl = searchParams.get('category');
-  const searchFromUrl = searchParams.get('search'); // Lấy từ khóa tìm kiếm từ Header truyền xuống
+  const searchFromUrl = searchParams.get('search'); 
 
   const [categories, setCategories] = useState([]);
   const [meals, setMeals] = useState([]);
@@ -19,12 +21,25 @@ const MenuPage = () => {
   
   const [selectedCategory, setSelectedCategory] = useState(categoryFromUrl || 'all');
 
-  // 🎯 Ref và State dùng cho 2 nút cuộn ngang < >
+  // Ref và State dùng cho 2 nút cuộn ngang < >
   const scrollContainerRef = useRef(null);
   const [showLeftArrow, setShowLeftArrow] = useState(false);
   const [showRightArrow, setShowRightArrow] = useState(true);
 
-  // LẮNG NGHE SỰ THAY ĐỔI CỦA URL (Đặc biệt khi tìm kiếm từ Header)
+  // 🎯 2. HÀM XỬ LÝ ẢNH THÔNG MINH
+  const getImageUrl = (imageString) => {
+    if (!imageString) return 'https://via.placeholder.com/400x300?text=NutriFood';
+    
+    // Nếu là Base64 hoặc link web ngoài -> Giữ nguyên
+    if (imageString.startsWith('data:image') || imageString.startsWith('http') || imageString.startsWith('blob:')) {
+      return imageString;
+    }
+    
+    // Nếu là ảnh vật lý cũ -> Nối với đường dẫn server
+    return `${BASE_SERVER_URL}${imageString.startsWith('/') ? '' : '/'}${imageString}`;
+  };
+
+  // LẮNG NGHE SỰ THAY ĐỔI CỦA URL
   useEffect(() => {
     setSelectedCategory(categoryFromUrl || 'all');
   }, [categoryFromUrl, searchFromUrl]);
@@ -40,13 +55,11 @@ const MenuPage = () => {
         ]);
 
         if (catRes.status === 'fulfilled' && catRes.value.data) {
-          // Lọc bỏ danh mục bị ẩn
           const activeCategories = catRes.value.data.filter(cat => cat.isActive !== false);
           setCategories(activeCategories);
         }
 
         if (mealRes.status === 'fulfilled' && mealRes.value.data) {
-          // 🎯 LỌC BỎ NHỮNG MÓN ĂN ĐÃ BỊ ADMIN ẨN (isActive === false)
           const activeMeals = mealRes.value.data.filter(meal => meal.isActive !== false);
           setMeals(activeMeals);
         }
@@ -62,14 +75,12 @@ const MenuPage = () => {
     fetchMenuData();
   }, []);
 
-  // 2. LOGIC LỌC MÓN ĂN (Sử dụng trực tiếp searchFromUrl thay vì state searchTerm cũ)
+  // 2. LOGIC LỌC MÓN ĂN
   const filteredMeals = meals.filter(meal => {
-    // Lọc theo từ khóa tìm kiếm từ Header
     const matchSearch = searchFromUrl 
       ? meal.name?.toLowerCase().includes(searchFromUrl.toLowerCase()) 
       : true;
     
-    // Lọc theo danh mục
     let matchCategory = true;
     if (selectedCategory !== 'all') {
       matchCategory = meal.categoryIds?.some(cat => 
@@ -84,7 +95,6 @@ const MenuPage = () => {
   const handleCategoryClick = (categoryId) => {
     setSelectedCategory(categoryId);
     
-    // Giữ lại search param hiện tại (nếu có), chỉ đổi category
     if (categoryId === 'all') {
       searchParams.delete('category');
     } else {
@@ -119,17 +129,16 @@ const MenuPage = () => {
   }, [categories]);
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50 font-sans">
+    <div className="font-sans text-slate-800 selection:bg-green-200 min-h-screen flex flex-col">
       <Header />
       
       <main className="flex-grow pt-28 pb-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           
-          {/* Tiêu đề trang (Gọn nhẹ & Thông báo kết quả tìm kiếm) */}
+          {/* Tiêu đề trang */}
           <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Khám phá Thực đơn</h1>
             
-            {/* Hiển thị thông báo khi có từ khóa tìm kiếm từ Header */}
             {searchFromUrl && (
               <div className="flex items-center gap-2 bg-green-50 px-4 py-2 rounded-xl border border-green-100">
                 <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
@@ -150,7 +159,7 @@ const MenuPage = () => {
             )}
           </div>
 
-          {/* --- THANH DANH MỤC (LƯỚT NGANG CÓ 2 NÚT BẤM) --- */}
+          {/* --- THANH DANH MỤC --- */}
           <div className="mb-8 relative group">
             
             {showLeftArrow && (
@@ -242,8 +251,9 @@ const MenuPage = () => {
                   
                   {/* Khu vực Hình ảnh */}
                   <div className="relative h-52 overflow-hidden bg-slate-100">
+                    {/* 🎯 3. CHÈN HÀM getImageUrl VÀO ĐÂY */}
                     <img 
-                      src={meal.imageUrl || 'https://via.placeholder.com/400x300?text=NutriFood'} 
+                      src={getImageUrl(meal.imageUrl)} 
                       alt={meal.name}
                       className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                     />

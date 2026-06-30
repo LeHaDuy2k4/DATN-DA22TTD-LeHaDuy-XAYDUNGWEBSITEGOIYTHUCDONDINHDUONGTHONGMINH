@@ -1,31 +1,4 @@
 import Meal from "../models/Meal.js";
-import fs from "fs";
-import path from "path";
-
-// Hàm hỗ trợ: Xóa file ảnh cũ khỏi server để giải phóng dung lượng ổ cứng
-// ... các import cũ của bạn
-
-// 🎯 HÀM ĐÃ ĐƯỢC FIX LỖI XÓA ẢNH CÓ DẤU TIẾNG VIỆT
-const deleteLocalImage = (imageUrl) => {
-    if (!imageUrl || !imageUrl.includes('/uploads/')) return;
-    try {
-        // Lấy tên file từ URL và GIẢI MÃ tiếng Việt
-        const rawFilename = imageUrl.split('/uploads/')[1];
-        const filename = decodeURIComponent(rawFilename); // Quan trọng!
-        
-        const filePath = path.join(process.cwd(), 'src', 'uploads', filename);
-        
-        // Kiểm tra và xóa file
-        if (fs.existsSync(filePath)) {
-            fs.unlinkSync(filePath);
-            console.log(`Đã dọn dẹp ảnh cũ: ${filename}`);
-        }
-    } catch (error) {
-        console.error("Lỗi khi xóa ảnh cũ:", error);
-    }
-};
-
-// ... giữ nguyên các hàm getAllMeals, getMealById, createMeal, updateMeal, deleteMeal...
 
 // 1. Lấy tất cả món ăn (Có kèm thông tin chi tiết từ Category và Ingredient)
 export const getAllMeals = async (req, res) => {
@@ -60,7 +33,7 @@ export const getMealById = async (req, res) => {
     }
 };
 
-// 3. Tạo món ăn mới (Hỗ trợ FormData & Upload Ảnh)
+// 3. Tạo món ăn mới (Hỗ trợ FormData & Upload Ảnh Base64)
 export const createMeal = async (req, res) => {
     try {
         const { name, description, prepTime, cookTime, servings, isActive } = req.body;
@@ -79,14 +52,17 @@ export const createMeal = async (req, res) => {
         if (req.body.ingredients) mealData.ingredients = JSON.parse(req.body.ingredients);
         if (req.body.instructions) mealData.instructions = JSON.parse(req.body.instructions);
 
-        // Xử lý ảnh upload
+        // 🎯 XỬ LÝ ẢNH BASE64 (Không lưu URL localhost nữa)
         if (req.file) {
-            mealData.imageUrl = `http://localhost:5001/uploads/${req.file.filename}`;
+            const base64Image = req.file.buffer.toString('base64');
+            const mimeType = req.file.mimetype; 
+            // Tạo chuỗi Data URI chuẩn để trình duyệt đọc được ngay lập tức
+            mealData.imageUrl = `data:${mimeType};base64,${base64Image}`;
         }
 
         const meal = new Meal(mealData);
 
-        // 🎯 LƯU Ý: Lệnh .save() sẽ tự động gọi hook pre('save') tính Calo và Tiền
+        // Lệnh .save() sẽ tự động gọi hook pre('save') tính Calo và Tiền trong file Model
         const newMeal = await meal.save();
         
         res.status(201).json({
@@ -99,7 +75,7 @@ export const createMeal = async (req, res) => {
     }
 };
 
-// 4. Cập nhật món ăn (Hỗ trợ FormData & Đổi ảnh mới)
+// 4. Cập nhật món ăn (Hỗ trợ FormData & Đổi ảnh Base64 mới)
 export const updateMeal = async (req, res) => {
     try {
         const { name, description, prepTime, cookTime, servings, isActive } = req.body;
@@ -123,13 +99,11 @@ export const updateMeal = async (req, res) => {
         if (req.body.ingredients) meal.ingredients = JSON.parse(req.body.ingredients);
         if (req.body.instructions) meal.instructions = JSON.parse(req.body.instructions);
 
-        // 🎯 Xử lý thay đổi ảnh
+        // 🎯 XỬ LÝ THAY ĐỔI ẢNH (Lưu trực tiếp chuỗi mới đè lên chuỗi cũ)
         if (req.file) {
-            // Xóa ảnh cũ trên server trước khi gắn ảnh mới để tránh rác dung lượng
-            if (meal.imageUrl) {
-                deleteLocalImage(meal.imageUrl);
-            }
-            meal.imageUrl = `http://localhost:5001/uploads/${req.file.filename}`;
+            const base64Image = req.file.buffer.toString('base64');
+            const mimeType = req.file.mimetype; 
+            meal.imageUrl = `data:${mimeType};base64,${base64Image}`;
         }
 
         // Lệnh .save() sẽ tự động chạy lại hook tính toán dinh dưỡng nếu ingredients thay đổi
@@ -154,11 +128,7 @@ export const deleteMeal = async (req, res) => {
             return res.status(404).json({ message: "Món ăn không tồn tại" });
         }
 
-        // 🎯 Xóa luôn file ảnh nội bộ tương ứng của món ăn này
-        if (deletedMeal.imageUrl) {
-            deleteLocalImage(deletedMeal.imageUrl);
-        }
-
+        // Không cần gọi hàm xóa file trên ổ cứng nữa vì ảnh nằm trong chính deletedMeal vừa bị xóa khỏi MongoDB
         res.status(200).json({ 
             message: "Xóa món ăn thành công", 
             meal: deletedMeal 
@@ -192,7 +162,7 @@ export const importMeals = async (req, res) => {
                         categoryIds: item.categoryIds,
                         ingredients: item.ingredients,
                         instructions: item.instructions,
-                        imageUrl: item.imageUrl,
+                        imageUrl: item.imageUrl, // Nếu chuỗi trong mảng import đã là Base64 thì nó sẽ được lưu thẳng vào DB
                         prepTime: item.prepTime,
                         cookTime: item.cookTime,
                         servings: item.servings,
