@@ -34,17 +34,26 @@ const Meals = () => {
   const [formData, setFormData] = useState(initialFormState);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // 🎯 HÀM XỬ LÝ ẢNH NHANH CHÓNG (Không cần cấu hình biến môi trường)
+  const getImageUrl = (imageUrl) => {
+    if (!imageUrl) return '';
+    // Nếu là ảnh từ Localhost (chưa có domain) thì nối thẳng với localhost:5001
+    if (imageUrl.startsWith('/uploads/')) {
+      return `http://localhost:5001${imageUrl}`;
+    }
+    // Nếu đã là link Cloudinary hoặc các link http khác thì giữ nguyên
+    return imageUrl;
+  };
+
   // 1. GỌI API LẤY DỮ LIỆU TỪ MONGODB
   const fetchData = async () => {
     try {
       setIsLoading(true);
-      const token = localStorage.getItem('nutrifood_token');
-      const config = { headers: { Authorization: `Bearer ${token}` }, withCredentials: true };
-
+      // Axios Interceptor đã tự động gắn Token nên không cần truyền thủ công
       const [mealsRes, categoriesRes, ingredientsRes] = await Promise.allSettled([
-        api.get('/meals', config),
-        api.get('/categories', config),
-        api.get('/ingredients', config)
+        api.get('/meals'),
+        api.get('/categories'),
+        api.get('/ingredients')
       ]);
       
       if (mealsRes.status === 'fulfilled' && mealsRes.value.data) {
@@ -96,8 +105,8 @@ const Meals = () => {
         servings: meal.servings || 1,
         isActive: meal.isActive !== undefined ? meal.isActive : true
       });
-      // Hiển thị ảnh cũ nếu đang sửa
-      setPreviewUrl(meal.imageUrl || '');
+      // 🎯 Hiển thị ảnh cũ qua hàm getImageUrl
+      setPreviewUrl(meal.imageUrl ? getImageUrl(meal.imageUrl) : '');
     } else {
       setEditId(null);
       setFormData(initialFormState);
@@ -185,7 +194,6 @@ const Meals = () => {
     try {
       setIsSubmitting(true);
       
-      // SỬ DỤNG FORMDATA ĐỂ CHỨA FILE VÀ CHỮ
       const submitData = new FormData();
       submitData.append('name', formData.name);
       submitData.append('description', formData.description);
@@ -202,13 +210,9 @@ const Meals = () => {
         submitData.append('image', selectedImage);
       }
 
-      const token = localStorage.getItem('nutrifood_token');
+      // Chỉ cần truyền Content-Type, Token đã tự động được Axios xử lý
       const config = { 
-        headers: { 
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'multipart/form-data'
-        }, 
-        withCredentials: true 
+        headers: { 'Content-Type': 'multipart/form-data' }
       };
 
       if (editId) {
@@ -232,10 +236,7 @@ const Meals = () => {
   const handleDelete = async (id, name) => {
     if (window.confirm(`Bạn có chắc chắn muốn xóa món "${name}" không?`)) {
       try {
-        const token = localStorage.getItem('nutrifood_token');
-        await api.delete(`/meals/${id}`, { 
-          headers: { Authorization: `Bearer ${token}` }, withCredentials: true 
-        });
+        await api.delete(`/meals/${id}`);
         setMeals(meals.filter(item => item._id !== id));
         toast.success(`Đã xóa món ${name}.`);
       } catch (error) {
@@ -307,7 +308,8 @@ const Meals = () => {
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
                           {meal.imageUrl ? (
-                            <img src={meal.imageUrl} alt={meal.name} className="w-12 h-12 rounded-xl object-cover border border-slate-200" />
+                            // 🎯 Tích hợp hàm getImageUrl ở đây
+                            <img src={getImageUrl(meal.imageUrl)} alt={meal.name} className="w-12 h-12 rounded-xl object-cover border border-slate-200" />
                           ) : (
                             <div className="w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center text-green-600 font-bold uppercase border border-green-200">{meal.name.charAt(0)}</div>
                           )}
