@@ -25,6 +25,22 @@ const MealDetailPage = () => {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // 🎯 HÀM LỌC ẢNH THEO MÔI TRƯỜNG
+  const getImageUrl = (imageUrl) => {
+    if (!imageUrl) return 'https://via.placeholder.com/800x600?text=NutriFood';
+    if (imageUrl.startsWith('http') && !imageUrl.includes('localhost')) {
+      return imageUrl;
+    }
+    let finalUrl = imageUrl;
+    if (imageUrl.includes('localhost:5001')) {
+      finalUrl = imageUrl.split('localhost:5001')[1]; 
+    }
+    if (import.meta.env.MODE === 'development' && finalUrl.startsWith('/uploads/')) {
+      return `http://localhost:5001${finalUrl}`;
+    }
+    return finalUrl;
+  };
+
   // 1. LẤY DỮ LIỆU MÓN ĂN VÀ TRẠNG THÁI YÊU THÍCH
   useEffect(() => {
     const fetchMealDetails = async () => {
@@ -168,7 +184,7 @@ const MealDetailPage = () => {
               <div className="relative">
                 <div className="h-[400px] lg:h-full min-h-[500px] relative">
                   <img 
-                    src={meal.imageUrl || 'https://via.placeholder.com/800x600?text=NutriFood'} 
+                    src={getImageUrl(meal.imageUrl)} 
                     alt={meal.name}
                     className="absolute inset-0 w-full h-full object-cover"
                   />

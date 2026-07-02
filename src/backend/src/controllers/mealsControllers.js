@@ -2,29 +2,24 @@ import Meal from "../models/Meal.js";
 import fs from "fs";
 import path from "path";
 
-// 🎯 HÀM HỖ TRỢ DỌN RÁC THÔNG MINH
+// 🎯 HÀM ĐÃ ĐƯỢC FIX: Bỏ qua ảnh Cloudinary, chỉ xóa ảnh Local
 const deleteLocalImage = (imageUrl) => {
-    // Bỏ qua nếu không có ảnh, hoặc ảnh là link Cloudinary (bắt đầu bằng http)
     if (!imageUrl || imageUrl.startsWith('http') || !imageUrl.includes('/uploads/')) return;
-    
     try {
-        // Lấy tên file từ URL và GIẢI MÃ tiếng Việt
         const rawFilename = imageUrl.split('/uploads/')[1];
         const filename = decodeURIComponent(rawFilename); 
         
         const filePath = path.join(process.cwd(), 'src', 'uploads', filename);
         
-        // Kiểm tra và xóa file nếu đang tồn tại trên ổ cứng local
         if (fs.existsSync(filePath)) {
             fs.unlinkSync(filePath);
-            console.log(`Đã dọn dẹp ảnh cũ local: ${filename}`);
+            console.log(`Đã dọn dẹp ảnh cũ: ${filename}`);
         }
     } catch (error) {
         console.error("Lỗi khi xóa ảnh cũ:", error);
     }
 };
 
-// 1. Lấy tất cả món ăn (Có kèm thông tin chi tiết từ Category và Ingredient)
 export const getAllMeals = async (req, res) => {
     try {
         const meals = await Meal.find()
@@ -39,7 +34,6 @@ export const getAllMeals = async (req, res) => {
     }
 };
 
-// 2. Lấy chi tiết 1 món ăn cụ thể 
 export const getMealById = async (req, res) => {
     try {
         const meal = await Meal.findById(req.params.id)
@@ -57,7 +51,6 @@ export const getMealById = async (req, res) => {
     }
 };
 
-// 3. Tạo món ăn mới (Tự động lưu ảnh theo môi trường)
 export const createMeal = async (req, res) => {
     try {
         const { name, description, prepTime, cookTime, servings, isActive } = req.body;
@@ -71,23 +64,21 @@ export const createMeal = async (req, res) => {
             isActive: isActive === 'true' || isActive === true
         };
 
-        // Giải nén các trường mảng/object bị FormData ép thành chuỗi
         if (req.body.categoryIds) mealData.categoryIds = JSON.parse(req.body.categoryIds);
         if (req.body.ingredients) mealData.ingredients = JSON.parse(req.body.ingredients);
         if (req.body.instructions) mealData.instructions = JSON.parse(req.body.instructions);
 
-        // 🎯 LƯU ẢNH THÔNG MINH DỰA VÀO MÔI TRƯỜNG NODE_ENV
+        // 🎯 LƯU ẢNH THÔNG MINH DỰA VÀO KẾT QUẢ MULTER
         if (req.file) {
-            if (process.env.NODE_ENV === 'production') {
-                mealData.imageUrl = req.file.path; // Cloudinary trả về full URL
+            if (req.file.path && req.file.path.startsWith('http')) {
+                mealData.imageUrl = req.file.path; // Cloudinary trả về link mạng
             } else {
-                mealData.imageUrl = `/uploads/${req.file.filename}`; // Localhost chỉ lưu /uploads/tên-file
+                mealData.imageUrl = `/uploads/${req.file.filename}`; // Local lưu đường dẫn tương đối
             }
         }
 
         const meal = new Meal(mealData);
 
-        // Lệnh .save() sẽ tự động gọi hook pre('save') tính Calo và Tiền
         const newMeal = await meal.save();
         
         res.status(201).json({
@@ -100,7 +91,6 @@ export const createMeal = async (req, res) => {
     }
 };
 
-// 4. Cập nhật món ăn (Tự động xóa ảnh local nếu có & Lưu ảnh mới theo môi trường)
 export const updateMeal = async (req, res) => {
     try {
         const { name, description, prepTime, cookTime, servings, isActive } = req.body;
@@ -111,7 +101,6 @@ export const updateMeal = async (req, res) => {
             return res.status(404).json({ message: "Món ăn không tồn tại" });
         }
 
-        // Cập nhật các trường text cơ bản
         if (name) meal.name = name;
         if (description !== undefined) meal.description = description;
         if (prepTime !== undefined) meal.prepTime = Number(prepTime);
@@ -119,27 +108,22 @@ export const updateMeal = async (req, res) => {
         if (servings !== undefined) meal.servings = Number(servings);
         if (isActive !== undefined) meal.isActive = isActive === 'true' || isActive === true;
 
-        // Cập nhật các trường mảng
         if (req.body.categoryIds) meal.categoryIds = JSON.parse(req.body.categoryIds);
         if (req.body.ingredients) meal.ingredients = JSON.parse(req.body.ingredients);
         if (req.body.instructions) meal.instructions = JSON.parse(req.body.instructions);
 
-        // 🎯 XỬ LÝ ẢNH KHI UPDATE
+        // 🎯 CẬP NHẬT ẢNH THÔNG MINH
         if (req.file) {
-            // Gọn gàng dọn dẹp ảnh cũ (Hàm đã được bọc an toàn, bỏ qua nếu là ảnh Cloudinary)
             if (meal.imageUrl) {
                 deleteLocalImage(meal.imageUrl);
             }
-            
-            // Gán link ảnh mới tùy theo môi trường
-            if (process.env.NODE_ENV === 'production') {
+            if (req.file.path && req.file.path.startsWith('http')) {
                 meal.imageUrl = req.file.path; 
             } else {
                 meal.imageUrl = `/uploads/${req.file.filename}`;
             }
         }
 
-        // Lệnh .save() sẽ tự động chạy lại hook tính toán dinh dưỡng nếu ingredients thay đổi
         const updatedMeal = await meal.save();
 
         res.status(200).json({ 
@@ -152,7 +136,6 @@ export const updateMeal = async (req, res) => {
     }
 };
 
-// 5. Xóa món ăn
 export const deleteMeal = async (req, res) => {
     try {
         const deletedMeal = await Meal.findByIdAndDelete(req.params.id);
@@ -161,7 +144,6 @@ export const deleteMeal = async (req, res) => {
             return res.status(404).json({ message: "Món ăn không tồn tại" });
         }
 
-        // 🎯 Dọn dẹp ảnh local tương ứng của món ăn này (nếu có)
         if (deletedMeal.imageUrl) {
             deleteLocalImage(deletedMeal.imageUrl);
         }
@@ -176,7 +158,6 @@ export const deleteMeal = async (req, res) => {
     }
 };
 
-// 6. Import hàng loạt món ăn (Từ mảng JSON)
 export const importMeals = async (req, res) => {
     try {
         const mealsData = req.body;

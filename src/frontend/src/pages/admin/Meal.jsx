@@ -34,26 +34,33 @@ const Meals = () => {
   const [formData, setFormData] = useState(initialFormState);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // 🎯 HÀM XỬ LÝ ẢNH NHANH CHÓNG (Không cần cấu hình biến môi trường)
+  // 🎯 HÀM LỌC ẢNH THEO MÔI TRƯỜNG
   const getImageUrl = (imageUrl) => {
     if (!imageUrl) return '';
-    // Nếu là ảnh từ Localhost (chưa có domain) thì nối thẳng với localhost:5001
-    if (imageUrl.startsWith('/uploads/')) {
-      return `http://localhost:5001${imageUrl}`;
+    if (imageUrl.startsWith('http') && !imageUrl.includes('localhost')) {
+      return imageUrl;
     }
-    // Nếu đã là link Cloudinary hoặc các link http khác thì giữ nguyên
-    return imageUrl;
+    let finalUrl = imageUrl;
+    if (imageUrl.includes('localhost:5001')) {
+      finalUrl = imageUrl.split('localhost:5001')[1]; 
+    }
+    if (import.meta.env.MODE === 'development' && finalUrl.startsWith('/uploads/')) {
+      return `http://localhost:5001${finalUrl}`;
+    }
+    return finalUrl;
   };
 
   // 1. GỌI API LẤY DỮ LIỆU TỪ MONGODB
   const fetchData = async () => {
     try {
       setIsLoading(true);
-      // Axios Interceptor đã tự động gắn Token nên không cần truyền thủ công
+      const token = localStorage.getItem('nutrifood_token');
+      const config = { headers: { Authorization: `Bearer ${token}` }, withCredentials: true };
+
       const [mealsRes, categoriesRes, ingredientsRes] = await Promise.allSettled([
-        api.get('/meals'),
-        api.get('/categories'),
-        api.get('/ingredients')
+        api.get('/meals', config),
+        api.get('/categories', config),
+        api.get('/ingredients', config)
       ]);
       
       if (mealsRes.status === 'fulfilled' && mealsRes.value.data) {
@@ -105,7 +112,7 @@ const Meals = () => {
         servings: meal.servings || 1,
         isActive: meal.isActive !== undefined ? meal.isActive : true
       });
-      // 🎯 Hiển thị ảnh cũ qua hàm getImageUrl
+      // 🎯 Hiển thị ảnh cũ nếu đang sửa
       setPreviewUrl(meal.imageUrl ? getImageUrl(meal.imageUrl) : '');
     } else {
       setEditId(null);
@@ -194,6 +201,7 @@ const Meals = () => {
     try {
       setIsSubmitting(true);
       
+      // SỬ DỤNG FORMDATA ĐỂ CHỨA FILE VÀ CHỮ
       const submitData = new FormData();
       submitData.append('name', formData.name);
       submitData.append('description', formData.description);
@@ -210,9 +218,13 @@ const Meals = () => {
         submitData.append('image', selectedImage);
       }
 
-      // Chỉ cần truyền Content-Type, Token đã tự động được Axios xử lý
+      const token = localStorage.getItem('nutrifood_token');
       const config = { 
-        headers: { 'Content-Type': 'multipart/form-data' }
+        headers: { 
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data'
+        }, 
+        withCredentials: true 
       };
 
       if (editId) {
@@ -236,7 +248,10 @@ const Meals = () => {
   const handleDelete = async (id, name) => {
     if (window.confirm(`Bạn có chắc chắn muốn xóa món "${name}" không?`)) {
       try {
-        await api.delete(`/meals/${id}`);
+        const token = localStorage.getItem('nutrifood_token');
+        await api.delete(`/meals/${id}`, { 
+          headers: { Authorization: `Bearer ${token}` }, withCredentials: true 
+        });
         setMeals(meals.filter(item => item._id !== id));
         toast.success(`Đã xóa món ${name}.`);
       } catch (error) {
@@ -308,7 +323,6 @@ const Meals = () => {
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
                           {meal.imageUrl ? (
-                            // 🎯 Tích hợp hàm getImageUrl ở đây
                             <img src={getImageUrl(meal.imageUrl)} alt={meal.name} className="w-12 h-12 rounded-xl object-cover border border-slate-200" />
                           ) : (
                             <div className="w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center text-green-600 font-bold uppercase border border-green-200">{meal.name.charAt(0)}</div>

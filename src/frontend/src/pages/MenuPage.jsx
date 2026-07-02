@@ -6,7 +6,6 @@ import api from '@/lib/axios';
 import Header from '@/components/layouts/Header'; 
 import Footer from '@/components/layouts/Footer';
 
-
 const MenuPage = () => {
   // --- ĐỌC DỮ LIỆU TỪ URL ---
   const [searchParams, setSearchParams] = useSearchParams();
@@ -23,6 +22,22 @@ const MenuPage = () => {
   const scrollContainerRef = useRef(null);
   const [showLeftArrow, setShowLeftArrow] = useState(false);
   const [showRightArrow, setShowRightArrow] = useState(true);
+
+  // 🎯 HÀM LỌC ẢNH THEO MÔI TRƯỜNG
+  const getImageUrl = (imageUrl) => {
+    if (!imageUrl) return 'https://via.placeholder.com/400x300?text=NutriFood';
+    if (imageUrl.startsWith('http') && !imageUrl.includes('localhost')) {
+      return imageUrl;
+    }
+    let finalUrl = imageUrl;
+    if (imageUrl.includes('localhost:5001')) {
+      finalUrl = imageUrl.split('localhost:5001')[1]; 
+    }
+    if (import.meta.env.MODE === 'development' && finalUrl.startsWith('/uploads/')) {
+      return `http://localhost:5001${finalUrl}`;
+    }
+    return finalUrl;
+  };
 
   // LẮNG NGHE SỰ THAY ĐỔI CỦA URL (Đặc biệt khi tìm kiếm từ Header)
   useEffect(() => {
@@ -243,7 +258,7 @@ const MenuPage = () => {
                   {/* Khu vực Hình ảnh */}
                   <div className="relative h-52 overflow-hidden bg-slate-100">
                     <img 
-                      src={meal.imageUrl || 'https://via.placeholder.com/400x300?text=NutriFood'} 
+                      src={getImageUrl(meal.imageUrl)} 
                       alt={meal.name}
                       className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                     />
